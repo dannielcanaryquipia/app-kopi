@@ -1,9 +1,53 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icons
 import { Link } from 'expo-router'; // Import Link for navigation
 
+const SocialIcon = memo(({ name, url }) => {
+  const handlePress = useCallback(async () => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  }, [url]);
+
+  return (
+    <TouchableOpacity 
+      onPress={handlePress} 
+      style={styles.iconButton}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${name} social media`}
+    >
+      <Icon name={name} size={22} color="#ffffff" />
+    </TouchableOpacity>
+  );
+});
+
+const PolicyLink = memo(({ text, onPress }) => (
+  <TouchableOpacity 
+    onPress={onPress}
+    activeOpacity={0.7}
+    accessibilityRole="button"
+    accessibilityLabel={`Open ${text}`}
+  >
+    <Text style={styles.policyText}>{text}</Text>
+  </TouchableOpacity>
+));
+
 const Footer = () => {
+  const handlePrivacyPolicy = useCallback(() => {
+    // Add privacy policy navigation logic
+  }, []);
+
+  const handleRefundPolicy = useCallback(() => {
+    // Add refund policy navigation logic
+  }, []);
+
   return (
     <View style={styles.footerContainer}>
       
@@ -15,25 +59,15 @@ const Footer = () => {
 
       {/* Social Media Icons */}
       <View style={styles.iconWrapper}>
-        <TouchableOpacity onPress={() => openLink('https://www.facebook.com')} style={styles.iconButton}>
-          <Icon name="facebook" size={22} color="#ffffff" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => openLink('https://www.instagram.com')} style={styles.iconButton}>
-          <Icon name="instagram" size={22} color="#ffffff" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => openLink('https://www.github.com')} style={styles.iconButton}>
-          <Icon name="github" size={22} color="#ffffff" />
-        </TouchableOpacity>
+        <SocialIcon name="facebook" url="https://www.facebook.com" />
+        <SocialIcon name="instagram" url="https://www.instagram.com" />
+        <SocialIcon name="github" url="https://www.github.com" />
       </View>
 
       <View style={styles.policyWrapper}>
-        <TouchableOpacity>
-          <Text style={styles.policyText}>Privacy Policy</Text>
-        </TouchableOpacity>
+        <PolicyLink text="Privacy Policy" onPress={handlePrivacyPolicy} />
         <Text style={styles.separator}> • </Text>
-        <TouchableOpacity>
-          <Text style={styles.policyText}>Refund Policy</Text>
-        </TouchableOpacity>
+        <PolicyLink text="Refund Policy" onPress={handleRefundPolicy} />
       </View>
 
     </View>
@@ -45,11 +79,17 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#343131',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
     paddingVertical: 12,
   },
   iconWrapper: {
@@ -59,6 +99,10 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     marginHorizontal: 10, // Spacing between icons
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   copyrightText: {
     fontSize: 18,
@@ -76,6 +120,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#ffffff',
     fontFamily: 'PoppinsRegular',
+    padding: 8,
   },
   separator: {
     fontSize: 12,
@@ -84,4 +129,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Footer;
+export default memo(Footer);

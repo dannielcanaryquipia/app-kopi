@@ -1,18 +1,28 @@
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, Dimensions, Platform, Pressable } from 'react-native';
-import Header from '../components/Header';
-import { Link } from 'expo-router';
+import { View, Text, Image, StyleSheet, Dimensions, Platform, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
+
+const colors = {
+  white: '#ffffff',
+  dark: '#343131',
+  primary: '#A04747',
+  secondary: '#D8A25E',
+  lightPink: '#faf4f5',
+};
 
 const HomeSection = () => {
   const { width, height } = Dimensions.get('window');
   const isLargeScreen = width > 900;
+  const router = useRouter();
 
-  const handlePress = useCallback((route) => {
-    // Preload the next screen
-    const nextScreen = route === '/gallery' ? 'Gallery' : 'Contact';
-    console.log(`Preloading ${nextScreen} screen...`);
-  }, []);
+  const handleOrderNow = useCallback(() => {
+    router.push('/gallery');
+  }, [router]);
+
+  const handleContactUs = useCallback(() => {
+    router.push('/contact');
+  }, [router]);
 
   const styles = useMemo(() => StyleSheet.create({
     heroSection: {
@@ -138,83 +148,52 @@ const HomeSection = () => {
 
   return (
     <View style={styles.heroSection}>
-      <Header />
       <View style={styles.sectionContent}>
         <View style={styles.heroDetails}>
-          <Text 
-            style={styles.title}
-            accessibilityRole="header"
-            accessibilityLabel="Bulan's Best Coffee"
-          >
-            Bulan's Best Coffee
-          </Text>
-          <Text 
-            style={styles.subtitle}
-            accessibilityRole="header"
-            accessibilityLabel="A coffee that tastes better, stays forever!"
-          >
-            A coffee that tastes better, stays forever!
-          </Text>
-          <Text 
-            style={styles.description}
-            accessibilityRole="text"
-            accessibilityLabel="Welcome to Kopi, where every taste tells a story and every cup sparks joy."
-          >
+          <Text style={styles.title}>Bulan's Best Coffee</Text>
+          <Text style={styles.subtitle}>A coffee that tastes better, stays forever!</Text>
+          <Text style={styles.description}>
             Welcome to Kopi, where every taste tells a story and every cup sparks joy.
           </Text>
-
           <View style={styles.buttonContainer}>
-            <Link 
-              href="/gallery" 
+            <TouchableOpacity
               style={[styles.button, styles.orderNow]}
-              onPress={() => handlePress('/gallery')}
+              onPress={handleOrderNow}
+              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Order Now"
-              accessibilityHint="Navigates to the gallery page to place an order"
             >
               <Text style={styles.orderNowText}>Order Now</Text>
-            </Link>
-            <Link 
-              href="/contact" 
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.button, styles.contactUs]}
-              onPress={() => handlePress('/contact')}
+              onPress={handleContactUs}
+              activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Contact Us"
-              accessibilityHint="Navigates to the contact page"
             >
               <Text style={styles.contactUsText}>Contact Us</Text>
-            </Link>
+            </TouchableOpacity>
           </View>
         </View>
-
         <View style={styles.heroImageWrapper}>
           <Image
-            source={require('../assets/images/Cappuccino_at_Sightglass_Coffee-removebg-preview.png')}
+            source={require('../assets/images/Cappuccino.png')}
             style={styles.heroImage}
             resizeMode="contain"
             fadeDuration={0}
-            accessibilityLabel="A delicious cappuccino coffee"
           />
           {Platform.OS === 'ios' && (
             <BlurView
               style={styles.blurOverlay}
-              blurType="dark"
-              blurAmount={5}
-              reducedTransparencyFallbackColor="black"
+              intensity={50}
+              tint="dark"
             />
           )}
         </View>
       </View>
     </View>
   );
-};
-
-const colors = {
-  white: '#ffffff',
-  dark: '#343131',
-  primary: '#A04747',
-  secondary: '#D8A25E',
-  lightPink: '#faf4f5',
 };
 
 export default React.memo(HomeSection);

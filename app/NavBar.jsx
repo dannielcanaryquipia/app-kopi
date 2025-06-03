@@ -1,6 +1,17 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, AccessibilityInfo, Pressable } from 'react-native';
-import { Link, usePathname } from 'expo-router';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Dimensions, 
+  Animated, 
+  AccessibilityInfo, 
+  Pressable,
+  Platform,
+  FlatList
+} from 'react-native';
+import { Link, usePathname, useRouter } from 'expo-router';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
@@ -16,13 +27,41 @@ const colors = {
 
 const NAV_MENU_WIDTH = width * 0.8;
 
-const NavBar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
-  const slideAnim = React.useRef(new Animated.Value(-width)).current;
-  const pathname = usePathname();
+// Create animated components
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+const AnimatedView = Animated.createAnimatedComponent(View);
 
-  // Check if screen reader is enabled
+const NavLink = React.memo(({ item, isActive, onPress }) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={[styles.navLink, isActive && styles.activeNavLink]}
+    activeOpacity={0.7}
+    accessibilityRole="link"
+    accessibilityLabel={`Navigate to ${item.label} page`}
+  >
+    <Text style={[
+      styles.navLinkText,
+      isActive && styles.activeNavLinkText
+    ]}>{item.label}</Text>
+  </TouchableOpacity>
+));
+
+const NavBar = ({ onClose }) => {
+  const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-width)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const menuItems = [
+    { route: '/', label: 'Home' },
+    { route: '/about', label: 'About' },
+    { route: '/menu', label: 'Menu' },
+    { route: '/testimonials', label: 'Testimonials' },
+    { route: '/gallery', label: 'Gallery' },
+    { route: '/contact', label: 'Contact' },
+  ];
+
   useEffect(() => {
     const checkScreenReader = async () => {
       const isEnabled = await AccessibilityInfo.isScreenReaderEnabled();
@@ -38,159 +77,109 @@ const NavBar = () => {
     return () => subscription.remove();
   }, []);
 
-  // Close menu when route changes
   useEffect(() => {
-    if (menuOpen) {
-      toggleMenu();
-    }
-  }, [pathname]);
-
-  const toggleMenu = useCallback(() => {
-    const toValue = menuOpen ? -width : 0;
-    Animated.spring(slideAnim, {
-      toValue,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-    setMenuOpen(!menuOpen);
-  }, [menuOpen, slideAnim]);
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
 
   const handleLinkPress = useCallback((route) => {
-    setMenuOpen(false);
-    // Announce navigation for screen readers
-    if (isScreenReaderEnabled) {
-      AccessibilityInfo.announceForAccessibility(`Navigating to ${route} page`);
-    }
-  }, [isScreenReaderEnabled]);
+    Animated.parallel([
+      Animated.spring(slideAnim, {
+        toValue: -width,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      if (isScreenReaderEnabled) {
+        AccessibilityInfo.announceForAccessibility(`Navigating to ${route} page`);
+      }
+      router.replace(route);
+    });
+  }, [isScreenReaderEnabled, router, slideAnim, fadeAnim]);
 
-  const menuItems = [
-    { route: '/', label: 'Home' },
-    { route: '/about', label: 'About' },
-    { route: '/menu', label: 'Menu' },
-    { route: '/testimonials', label: 'Testimonials' },
-    { route: '/gallery', label: 'Gallery' },
-    { route: '/contact', label: 'Contact' },
-  ];
+  const renderItem = useCallback(({ item }) => (
+    <NavLink
+      item={item}
+      isActive={pathname === item.route}
+      onPress={() => handleLinkPress(item.route)}
+    />
+  ), [pathname, handleLinkPress]);
+
+  const keyExtractor = useCallback((item) => item.route, []);
+
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   return (
-    <View style={styles.navbar} pointerEvents={menuOpen ? 'box-none' : 'auto'}>
-      {/* Logo */}
-      <Link href="/" style={styles.logoLink}>
-        <Text 
-          style={styles.logoText}
-          accessibilityRole="header"
-          accessibilityLabel="Kopi Coffee Shop"
-        >
-          Kopi
-        </Text>
-      </Link>
-
-      {/* Menu Toggle Button */}
-      {!menuOpen && (
-        <TouchableOpacity 
-          onPress={toggleMenu} 
-          style={styles.menuToggle}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel={menuOpen ? "Close menu" : "Open menu"}
-          accessibilityHint="Opens the navigation menu"
-        >
-          <Ionicons name={menuOpen ? 'close' : 'menu'} size={28} color="#cccccc" />
-        </TouchableOpacity>
-      )}
-
-      {/* Overlay barrier */}
-      {menuOpen && (
+    <View style={styles.container}>
+      <AnimatedView 
+        style={[
+          styles.overlay,
+          { opacity: fadeAnim }
+        ]}
+      >
         <Pressable
-          style={styles.overlay}
-          onPress={toggleMenu}
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
           accessibilityLabel="Close menu"
           accessibilityRole="button"
         />
-      )}
+      </AnimatedView>
 
-      {/* Menu */}
-      <Animated.View 
+      <AnimatedView 
         style={[
           styles.navMenu,
           { transform: [{ translateX: slideAnim }] },
         ]}
-        accessibilityViewIsModal={menuOpen}
+        accessibilityViewIsModal={true}
         accessibilityRole="menu"
-        pointerEvents={menuOpen ? 'auto' : 'none'}
       >
-        <TouchableOpacity
-          style={styles.closeIconContainer}
-          onPress={toggleMenu}
-          accessibilityRole="button"
-          accessibilityLabel="Close menu"
-        >
-          <Ionicons name="close" size={20} color={colors.primary} />
-        </TouchableOpacity>
-        <View style={styles.menuContent}>
-          {menuItems.map((item) => (
-            <Link
-              key={item.route}
-              href={item.route} 
-              style={[
-                styles.navLink,
-                pathname === item.route && styles.activeNavLink
-              ]}
-              onPress={() => handleLinkPress(item.label)}
-              accessibilityRole="link"
-              accessibilityLabel={`Navigate to ${item.label} page`}
-            >
-              <Text style={[
-                styles.navLinkText,
-                pathname === item.route && styles.activeNavLinkText
-              ]}>{item.label}</Text>
-            </Link>
-          ))}
-        </View>
-      </Animated.View>
+        <AnimatedFlatList
+          data={menuItems}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          contentContainerStyle={styles.menuContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          initialNumToRender={menuItems.length}
+          maxToRenderPerBatch={menuItems.length}
+          windowSize={3}
+          removeClippedSubviews={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
+          scrollEventThrottle={16}
+        />
+      </AnimatedView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  navbar: {
-    position: 'absolute',
-    top: 0,
-    width: '100%',
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    zIndex: 1000,
-  },
-  logoLink: {
-    textDecorationLine: 'none',
-  },
-  logoText: {
-    color: colors.secondary,
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: 'PoppinsSemiBold',
-  },
-  menuToggle: {
-    padding: 10,
-    zIndex: 1001,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  container: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
   },
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: NAV_MENU_WIDTH,
-    width: width - NAV_MENU_WIDTH,
-    height: height,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
-    zIndex: 998,
   },
   navMenu: {
     position: 'absolute',
@@ -199,12 +188,17 @@ const styles = StyleSheet.create({
     width: NAV_MENU_WIDTH,
     height: height,
     backgroundColor: colors.white,
-    zIndex: 999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
     borderRightWidth: 1,
     borderRightColor: colors.mediumgray,
   },
@@ -219,8 +213,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column',
-    gap: 18,
+    paddingTop: 60,
   },
   navLink: {
     paddingVertical: 10,
@@ -245,4 +238,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(NavBar);
+export default React.memo(NavBar); 

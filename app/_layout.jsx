@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { Stack } from 'expo-router';
 import * as Font from 'expo-font';
-import { View, ActivityIndicator, Text, LogBox } from 'react-native';
-import NavBar from './NavBar'; // Import NavBar
+import { View, ActivityIndicator, Text, LogBox, BackHandler, Animated, Easing } from 'react-native';
+import Header from '../components/Header'; // Import Header instead of NavBar
 
 // Suppress specific warnings that might affect production
 LogBox.ignoreLogs([
@@ -43,16 +43,37 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Loading Component
-const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#343131' }}>
-    <ActivityIndicator size="large" color="#D8A25E" />
-  </View>
-);
+// Loading Component with fade animation
+const LoadingScreen = () => {
+  const fadeAnim = new Animated.Value(0);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.ease,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View style={{ 
+      flex: 1, 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      backgroundColor: '#343131',
+      opacity: fadeAnim
+    }}>
+      <ActivityIndicator size="large" color="#D8A25E" />
+    </Animated.View>
+  );
+};
 
 const Layout = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const fadeAnim = new Animated.Value(1);
 
   const loadFonts = useCallback(async () => {
     try {
@@ -68,9 +89,41 @@ const Layout = () => {
     }
   }, []);
 
+  const handleNavigationStateChange = useCallback((state) => {
+    if (state) {
+      setIsTransitioning(true);
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setIsTransitioning(false);
+      });
+    }
+  }, [fadeAnim]);
+
   useEffect(() => {
     loadFonts();
-  }, [loadFonts]);
+
+    // Add back button handler
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isTransitioning) {
+        return true; // Prevent back action during transition
+      }
+      return false; // Allow default back behavior
+    });
+
+    return () => {
+      backHandler.remove();
+    };
+  }, [loadFonts, isTransitioning]);
 
   if (error) {
     return (
@@ -87,26 +140,32 @@ const Layout = () => {
   return (
     <ErrorBoundary>
       <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-        <NavBar />
+        <Header />
         <Suspense fallback={<LoadingScreen />}>
-          <Stack
-            screenOptions={{
-              headerShown: false, // Hide the header globally for all screens
-              headerStyle: { backgroundColor: '#343131' },
-              headerTintColor: '#ffffff',
-              headerTitleStyle: { 
-                fontFamily: 'PoppinsSemiBold',
-                fontSize: 18
-              },
-              contentStyle: { backgroundColor: '#ffffff' },
-              animation: 'slide_from_right',
-              animationDuration: 200,
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-              fullScreenGestureEnabled: true,
-            }}
-          />
+          <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+            <Stack
+              screenOptions={{
+                headerShown: false, // Hide the header globally for all screens
+                headerStyle: { backgroundColor: '#343131' },
+                headerTintColor: '#ffffff',
+                headerTitleStyle: { 
+                  fontFamily: 'PoppinsSemiBold',
+                  fontSize: 18
+                },
+                contentStyle: { backgroundColor: '#ffffff' },
+                animation: 'fade', // Use fade animation for smoother transitions
+                animationDuration: 200,
+                gestureEnabled: true,
+                gestureDirection: 'horizontal',
+                fullScreenGestureEnabled: true,
+                presentation: 'card',
+                animationTypeForReplace: 'push',
+              }}
+              onStateChange={handleNavigationStateChange}
+            />
+          </Animated.View>
         </Suspense>
+        {isTransitioning && <LoadingScreen />}
       </View>
     </ErrorBoundary>
   );

@@ -1,44 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import Footer from '../components/Footer'; // Import the Footer component
+import { FontAwesome } from '@expo/vector-icons';
+import Footer from '../components/Footer';
+
 const Contact = () => {
   const contactInfo = [
-    {
-      id: 1,
-      icon: 'map-marker',
-      text: 'Zone 8, Bulan, Sorsogon, Philippines 4706',
-    },
-    {
-      id: 2,
-      icon: 'envelope',
-      text: 'kopigroup@gmail.com',
-    },
-    {
-      id: 3,
-      icon: 'phone',
-      text: '(123) 456-78909',
-    },
-    {
-      id: 4,
-      icon: 'clock-o',
-      text: 'Monday - Friday: 9:00 AM - 5:00 PM',
-    },
-    {
-      id: 5,
-      icon: 'clock-o',
-      text: 'Saturday: 10:00 AM - 3:00 PM',
-    },
-    {
-      id: 6,
-      icon: 'clock-o',
-      text: 'Sunday: Closed',
-    },
+    { id: 1, icon: 'map-marker', text: 'Zone 8, Bulan, Sorsogon, Philippines 4706' },
+    { id: 2, icon: 'envelope', text: 'kopigroup@gmail.com' },
+    { id: 3, icon: 'phone', text: '(123) 456-78909' },
+    { id: 4, icon: 'clock-o', text: 'Monday - Friday: 9:00 AM - 5:00 PM' },
+    { id: 5, icon: 'clock-o', text: 'Saturday: 10:00 AM - 3:00 PM' },
+    { id: 6, icon: 'clock-o', text: 'Sunday: Closed' },
   ];
 
   const renderContactInfo = ({ item }) => (
     <View style={styles.contactInfo}>
-      <Icon name={item.icon} size={20} color="#343131" style={styles.contactIcon} />
+      <FontAwesome name={item.icon} size={20} color="#343131" style={styles.contactIcon} />
       <Text style={styles.contactText}>{item.text}</Text>
     </View>
   );
@@ -51,12 +28,9 @@ const Contact = () => {
       contentContainerStyle={styles.contentContainer}
       ListHeaderComponent={
         <View>
-          {/* Title */}
           <View style={styles.titleWrapper}>
             <Text style={styles.title}>Contact Us</Text>
           </View>
-
-          {/* Contact Form */}
           <View style={styles.form}>
             <TextInput style={styles.input} placeholder="Your name" placeholderTextColor="#aaa" />
             <TextInput style={styles.input} placeholder="Your email" placeholderTextColor="#aaa" keyboardType="email-address" />
@@ -72,7 +46,7 @@ const Contact = () => {
           </View>
         </View>
       }
-      ListFooterComponent={<Footer />} // Add the Footer component here
+      ListFooterComponent={<Footer />}
     />
   );
 };
@@ -87,23 +61,19 @@ const colors = {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.lightpink,
-  },
   contentContainer: {
     padding: 20,
   },
   titleWrapper: {
     marginBottom: 20,
     alignItems: 'center',
-    paddingTop: 20, // Ensure the title is visible
+    paddingTop: 20,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#000000', // Use black for better visibility
-    fontFamily: 'PoppinsBold',
+    color: '#000000',
+    fontFamily: 'PoppinsSemiBold',
     paddingTop: 50,
   },
   form: {

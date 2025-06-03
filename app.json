@@ -13,9 +13,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.danniel_canary_quipia.appkopi",
+      "bundleIdentifier": "com.dannielcanaryquipia.appkopi",
       "buildNumber": "1.0.0",
       "icon": "./assets/icon.png",
       "splash": {
@@ -49,11 +52,13 @@
     ],
     "jsEngine": "jsc",
     "extra": {
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "a1b2bfe0-8270-415f-b955-503b575f5fec"
+        "projectId": "02599b32-107c-4916-8162-a948d5417820"
       }
     },
-    "owner": "danniel_canary_quipia"
+    "owner": "dannielcanaryquipia"
   }
 }
