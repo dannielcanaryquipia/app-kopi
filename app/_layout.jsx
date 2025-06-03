@@ -60,7 +60,7 @@ const LoadingScreen = () => {
     <Animated.View style={{ 
       flex: 1, 
       justifyContent: 'center', 
-      alignItems: 'center', 
+      alignItems: 'center',
       backgroundColor: '#343131',
       opacity: fadeAnim
     }}>
